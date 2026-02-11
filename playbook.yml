@@ -1,0 +1,9 @@
+---
+- name: Install & Configure 3CX PBX
+  hosts: threecx
+  become: yes
+  gather_facts: yes
+  vars_files:
+    - group_vars/all.yml
+  roles:
+    - 3cx

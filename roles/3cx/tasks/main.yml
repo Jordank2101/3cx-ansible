@@ -1,0 +1,53 @@
+# roles/3cx/tasks/main.yml - KOMPLETT KORRIGIERT
+
+---
+- name: Update system packages
+  apt:
+    update_cache: yes
+    upgrade: dist
+
+- name: Install prerequisites
+  apt:
+    name:
+      - curl
+      - gnupg2
+      - apt-transport-https
+      - ca-certificates
+      - wget
+    state: present
+
+- name: Add 3CX GPG key
+  shell: |
+    wget -O- https://repo.3cx.com/key.pub | gpg --dearmor | tee /usr/share/keyrings/3cx-archive-keyring.gpg > /dev/null
+  args:
+    creates: /usr/share/keyrings/3cx-archive-keyring.gpg
+
+- name: Add 3CX repository (Debian 12)
+  shell: |
+    echo "deb [arch=amd64 by-hash=yes signed-by=/usr/share/keyrings/3cx-archive-keyring.gpg] http://repo.3cx.com/3cx bookworm main" | tee /etc/apt/sources.list.d/3cxpbx.list
+  args:
+    creates: /etc/apt/sources.list.d/3cxpbx.list
+
+- name: Update apt cache after repo add
+  apt:
+    update_cache: yes
+
+- name: Install 3CX PBX
+  apt:
+    name: 3cxpbx
+    state: present
+
+- name: Stop any running 3CX services
+  shell: sudo systemctl stop 3CX*
+  ignore_errors: yes
+
+- name: Reset 3CX config database (for fresh install)
+  file:
+    path: /var/lib/3cxpbx/Instance1/Data/Common
+    state: absent
+  ignore_errors: yes
+
+- name: Final setup info
+  debug:
+    msg: 3CX Erfolgreich installiert, bitte Setup unter http://{{ ansible_default_ipv4.address }}:5015 abschließen 
+
